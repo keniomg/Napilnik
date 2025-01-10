@@ -1,0 +1,49 @@
+namespace Napilnik
+{
+    public class Weapon
+    {
+        private int _damage;
+        private int _bulletsCount;
+        private readonly int _minimumDamage = 0;
+        private readonly int _minimumBulletsCount = 0;
+
+        public void Fire(Player player)
+        {
+            if (player == null || _bulletsCount <= _minimumBulletsCount || _damage <= _minimumDamage)
+                return;
+
+            player.TakeDamage(_damage);
+            _bulletsCount--;
+        }
+    }
+
+    public class Player
+    {
+        private int _currentHealth;
+        private int _minimumHealth = 0;
+
+        public void TakeDamage(int damage)
+        {
+            if (damage <= 0 || _currentHealth <= _minimumHealth)
+                return;
+
+            _currentHealth -= damage;
+
+            if (_currentHealth <= _minimumHealth)
+                _currentHealth = _minimumHealth;
+        }
+    }
+
+    public class Bot
+    {
+        private Weapon _weapon;
+
+        private void OnSeePlayer(Player player)
+        {
+            if (player == null)
+                return;
+
+            _weapon.Fire(player);
+        }
+    }
+}
