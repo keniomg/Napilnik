@@ -1,36 +1,76 @@
+using System;
+
 namespace Napilnik
 {
     public class Weapon
     {
         private int _damage;
         private int _bulletsCount;
-        private readonly int _minimumDamage = 0;
-        private readonly int _minimumBulletsCount = 0;
+
+        public Weapon(int damage, int bulletsCount)
+        {
+            if (damage <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(damage));
+            }
+            else if (bulletsCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bulletsCount));
+            }
+            else
+            {
+                _damage = damage;
+                _bulletsCount = bulletsCount;
+            }
+        }
 
         public void Fire(Player player)
         {
-            if (player == null || _bulletsCount <= _minimumBulletsCount || _damage <= _minimumDamage)
-                return;
-
-            player.TakeDamage(_damage);
-            _bulletsCount--;
+            if (player == null)
+            {
+                throw new NullReferenceException(nameof(player));
+            }
+            else if (_bulletsCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(_bulletsCount));
+            }
+            else
+            {
+                player.TakeDamage(_damage);
+                _bulletsCount--;
+            }
         }
     }
 
     public class Player
     {
         private int _currentHealth;
-        private int _minimumHealth = 0;
+
+        public Player(int currentHealth)
+        {
+            if (currentHealth <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(currentHealth));
+            }
+            else
+            {
+                _currentHealth = currentHealth;
+            }
+        }
 
         public void TakeDamage(int damage)
         {
-            if (damage <= 0 || _currentHealth <= _minimumHealth)
-                return;
-
-            _currentHealth -= damage;
-
-            if (_currentHealth <= _minimumHealth)
-                _currentHealth = _minimumHealth;
+            if (damage <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(damage));
+            }
+            else
+            {
+                _currentHealth -= damage;
+                
+                if (_currentHealth <= 0)
+                    _currentHealth = 0;
+            }
         }
     }
 
@@ -38,12 +78,28 @@ namespace Napilnik
     {
         private Weapon _weapon;
 
+        public Bot(Weapon weapon)
+        {
+            if (weapon == null)
+            {
+                throw new NullReferenceException(nameof(weapon));
+            }
+            else
+            {
+                _weapon = weapon;
+            }
+        }
+
         private void OnSeePlayer(Player player)
         {
             if (player == null)
-                return;
-
-            _weapon.Fire(player);
+            {
+                throw new NullReferenceException(nameof(player));
+            }
+            else
+            {
+                _weapon.Fire(player);
+            }
         }
     }
 }
