@@ -1,0 +1,148 @@
+namespace Napilnik
+{
+    using System;
+    using System.Collections.Generic;
+
+    internal class Napilnik
+    {
+        public static void Main()
+        {
+            try
+            {
+                Good iPhone12 = new Good("IPhone 12");
+                Good iPhone11 = new Good("IPhone 11");
+
+                Warehouse warehouse = new Warehouse();
+
+                Shop shop = new Shop(warehouse);
+
+                warehouse.Add(iPhone12, 10);
+                warehouse.Add(iPhone11, 1);
+                warehouse.ShowGoods();
+                //Вывод всех товаров на складе с их остатком
+
+                Cart cart = shop.Cart();
+                cart.Add(iPhone11, 3); //при такой ситуации возникает ошибка так, как нет нужного количества товара на складе
+                cart.ShowGoods();
+                //Вывод всех товаров в корзине
+
+                Console.WriteLine(cart.Order().Paylink);
+
+                cart.Add(iPhone12, 9); //Ошибка, после заказа
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Ошибка: {exception.Message}");
+            }
+        }
+
+        public class Good
+        {
+            public Good(string name)
+            {
+                Name = name ?? throw new ArgumentException(nameof(name));
+            }
+
+            public string Name { get; private set; }
+        }
+
+        public abstract class GoodsFillable
+        {
+            private readonly Dictionary<Good, int> _goods = new Dictionary<Good, int>();
+
+            public virtual void Add(Good good, int count)
+            {
+                if (good == null || count <= 0)
+                    throw new ArgumentException("Один из аргументов имеет недопустимое значение");
+
+                if (_goods.ContainsKey(good))
+                {
+                    _goods[good] += count;
+                }
+                else
+                {
+                    _goods.Add(good, count);
+                }
+            }
+
+            public virtual void Remove(Good good, int count)
+            {
+                if (_goods.ContainsKey(good) == false)
+                    throw new ArgumentException(nameof(good));
+
+                if (good == null || count <= 0 || count > _goods[good])
+                    throw new ArgumentException("Один из аргументов имеет недопустимое значение");
+
+
+                _goods[good] -= count;
+
+                if (_goods[good] == 0)
+                    _goods.Remove(good);
+            }
+
+            public void ShowGoods()
+            {
+                foreach (KeyValuePair<Good, int> pair in _goods)
+                {
+                    Console.WriteLine($"Товаров '{pair.Key.Name}' - {pair.Value} - штук");
+                }
+            }
+        }
+
+        public class Warehouse : GoodsFillable { }
+
+        public class Cart : GoodsFillable
+        {
+            private Shop _shop;
+
+            public void SetShop(Shop shop)
+            {
+                _shop = shop ?? throw new ArgumentNullException(nameof(shop));
+            }
+
+            public Order Order()
+            {
+                return new Order();
+            }
+
+            public override void Add(Good good, int count)
+            {
+                _shop.Warehouse.Remove(good, count);
+                base.Add(good, count);
+            }
+
+            public override void Remove(Good good, int count)
+            {
+                base.Remove(good, count);
+                _shop.Warehouse.Add(good, count);
+            }
+        }
+
+        public class Order
+        {
+            public Order()
+            {
+                Paylink = "www.somelink.com";
+            }
+
+            public string Paylink { get; private set; }
+        }
+
+        public class Shop
+        {
+            public Shop(Warehouse warehouse)
+            {
+                Warehouse = warehouse ?? throw new ArgumentNullException(nameof(warehouse));
+            }
+
+            public Warehouse Warehouse { get; private set; }
+
+            public Cart Cart()
+            {
+                Cart cart = new Cart();
+                cart.SetShop(this);
+                return cart;
+            }
+        }
+    }
+}
