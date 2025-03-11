@@ -73,7 +73,6 @@ namespace Napilnik
                 if (good == null || count <= 0 || count > _goods[good])
                     throw new ArgumentException("Один из аргументов имеет недопустимое значение");
 
-
                 _goods[good] -= count;
 
                 if (_goods[good] == 0)
@@ -83,21 +82,25 @@ namespace Napilnik
             public void ShowGoods()
             {
                 foreach (KeyValuePair<Good, int> pair in _goods)
-                {
                     Console.WriteLine($"Товаров '{pair.Key.Name}' - {pair.Value} - штук");
-                }
             }
         }
 
-        public class Warehouse : GoodsFillable { }
+        public interface IWarehouse
+        {
+            void Remove(Good good, int count);
+            void Add(Good good, int count);
+        }
+
+        public class Warehouse : GoodsFillable, IWarehouse { }
 
         public class Cart : GoodsFillable
         {
-            private Shop _shop;
+            private readonly IWarehouse _iWarehouse;
 
-            public void SetShop(Shop shop)
+            public Cart(IWarehouse iWarehouse)
             {
-                _shop = shop ?? throw new ArgumentNullException(nameof(shop));
+                _iWarehouse = iWarehouse ?? throw new ArgumentNullException(nameof(iWarehouse));
             }
 
             public Order Order()
@@ -107,14 +110,14 @@ namespace Napilnik
 
             public override void Add(Good good, int count)
             {
-                _shop.Warehouse.Remove(good, count);
+                _iWarehouse.Remove(good, count);
                 base.Add(good, count);
             }
 
             public override void Remove(Good good, int count)
             {
                 base.Remove(good, count);
-                _shop.Warehouse.Add(good, count);
+                _iWarehouse.Add(good, count);
             }
         }
 
@@ -130,18 +133,16 @@ namespace Napilnik
 
         public class Shop
         {
-            public Shop(Warehouse warehouse)
-            {
-                Warehouse = warehouse ?? throw new ArgumentNullException(nameof(warehouse));
-            }
+            private readonly IWarehouse _iWarehouse;
 
-            public Warehouse Warehouse { get; private set; }
+            public Shop(IWarehouse iWarehouse)
+            {
+                _iWarehouse = iWarehouse ?? throw new ArgumentNullException(nameof(iWarehouse));
+            }
 
             public Cart Cart()
             {
-                Cart cart = new Cart();
-                cart.SetShop(this);
-                return cart;
+                return new Cart(_iWarehouse);
             }
         }
     }
