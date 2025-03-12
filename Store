@@ -40,7 +40,7 @@ namespace Napilnik
         {
             public Good(string name)
             {
-                Name = name ?? throw new ArgumentException(nameof(name));
+                Name = name ?? throw new ArgumentException("Имя товара не может быть равно 'null'");
             }
 
             public string Name { get; private set; }
@@ -48,41 +48,62 @@ namespace Napilnik
 
         public abstract class GoodsFillable
         {
-            private readonly Dictionary<Good, int> _goods = new Dictionary<Good, int>();
+            protected readonly Dictionary<Good, int> Goods = new Dictionary<Good, int>();
 
             public virtual void Add(Good good, int count)
             {
-                if (good == null || count <= 0)
-                    throw new ArgumentException("Один из аргументов имеет недопустимое значение");
-
-                if (_goods.ContainsKey(good))
+                if (ValidateArguments(good, count))
                 {
-                    _goods[good] += count;
-                }
-                else
-                {
-                    _goods.Add(good, count);
+                    if (Goods.ContainsKey(good))
+                    {
+                        Goods[good] += count;
+                    }
+                    else
+                    {
+                        Goods.Add(good, count);
+                    }
                 }
             }
 
-            public virtual void Remove(Good good, int count)
+            public void Remove(Good good, int count)
             {
-                if (_goods.ContainsKey(good) == false)
-                    throw new ArgumentException(nameof(good));
+                if (ValidateRemoveArguments(good, count))
+                {
+                    Goods[good] -= count;
 
-                if (good == null || count <= 0 || count > _goods[good])
-                    throw new ArgumentException("Один из аргументов имеет недопустимое значение");
-
-                _goods[good] -= count;
-
-                if (_goods[good] == 0)
-                    _goods.Remove(good);
+                    if (Goods[good] == 0)
+                        Goods.Remove(good);
+                }
             }
 
             public void ShowGoods()
             {
-                foreach (KeyValuePair<Good, int> pair in _goods)
+                foreach (KeyValuePair<Good, int> pair in Goods)
                     Console.WriteLine($"Товаров '{pair.Key.Name}' - {pair.Value} - штук");
+            }
+
+            public bool ValidateRemoveArguments(Good good, int count)
+            {
+                ValidateArguments(good, count);
+
+                if (Goods.ContainsKey(good) == false)
+                    throw new ArgumentException("Товар отсутствует в списке");
+
+                if (count > Goods[good])
+                    throw new InvalidOperationException("Введено слишком большое количество товаров");
+
+                return true;
+            }
+
+            protected bool ValidateArguments(Good good, int count)
+            {
+                if (good == null)
+                    throw new ArgumentNullException("Товар не может быть равен 'null'");
+
+                if (count <= 0)
+                    throw new ArgumentOutOfRangeException("Количество товара не может быть отрицательным");
+
+                return true;
             }
         }
 
@@ -90,6 +111,7 @@ namespace Napilnik
         {
             void Remove(Good good, int count);
             void Add(Good good, int count);
+            bool ValidateRemoveArguments(Good good, int count);
         }
 
         public class Warehouse : GoodsFillable, IWarehouse { }
@@ -100,24 +122,28 @@ namespace Napilnik
 
             public Cart(IWarehouse iWarehouse)
             {
-                _iWarehouse = iWarehouse ?? throw new ArgumentNullException(nameof(iWarehouse));
+                _iWarehouse = iWarehouse ?? throw new ArgumentNullException("Склад не может быть равен 'null'");
             }
 
             public Order Order()
             {
+                foreach (KeyValuePair<Good, int> pair in Goods)
+                {
+                    _iWarehouse.Remove(pair.Key, pair.Value);
+                }
+
                 return new Order();
             }
 
             public override void Add(Good good, int count)
             {
-                _iWarehouse.Remove(good, count);
-                base.Add(good, count);
-            }
+                if (ValidateArguments(good, count))
+                {
+                    int totalGoodCount = Goods.ContainsKey(good) ? count + Goods[good] : count;
 
-            public override void Remove(Good good, int count)
-            {
-                base.Remove(good, count);
-                _iWarehouse.Add(good, count);
+                    if (_iWarehouse.ValidateRemoveArguments(good, totalGoodCount))
+                        base.Add(good, count);
+                }
             }
         }
 
@@ -137,7 +163,7 @@ namespace Napilnik
 
             public Shop(IWarehouse iWarehouse)
             {
-                _iWarehouse = iWarehouse ?? throw new ArgumentNullException(nameof(iWarehouse));
+                _iWarehouse = iWarehouse ?? throw new ArgumentNullException("Склад не может быть равен 'null'");
             }
 
             public Cart Cart()
