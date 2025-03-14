@@ -1,0 +1,148 @@
+using System;
+using System.IO;
+
+namespace Lesson
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            FridayLoggerPolicy fridayPolicy = new FridayLoggerPolicy();
+            NormalLoggerPolicy normalPolicy = new NormalLoggerPolicy();
+
+            ConsoleLogger consoleLogger = new ConsoleLogger("Пишу в консоль");
+            FileLogger fileLogger = new FileLogger("Пишу в файл");
+
+            ConditionalLogger normalConsoleLogger = new ConditionalLogger(consoleLogger, normalPolicy);
+            ConditionalLogger normalFileLogger = new ConditionalLogger(fileLogger, normalPolicy);
+            ConditionalLogger fridayConsoleLogger = new ConditionalLogger(consoleLogger, fridayPolicy);
+            ConditionalLogger fridayFileLogger = new ConditionalLogger(fileLogger, fridayPolicy);
+
+            ILogger[] loggers = new ILogger[2];
+            loggers[0] = normalConsoleLogger;
+            loggers[1] = fridayFileLogger;
+
+            MultiLogger multiLogger = new MultiLogger(loggers);
+
+            Pathfinder normalConsolePathfinder = new Pathfinder(normalConsoleLogger);
+            Pathfinder normalFilePathfinder = new Pathfinder(normalFileLogger);
+            Pathfinder fridayConsolePathfinder = new Pathfinder(fridayConsoleLogger);
+            Pathfinder fridayFilePathfinder = new Pathfinder(fridayFileLogger);
+            Pathfinder multiPathfinder = new Pathfinder(multiLogger);
+
+            normalConsolePathfinder.Find();
+            normalFilePathfinder.Find();
+            fridayConsolePathfinder.Find();
+            fridayFilePathfinder.Find();
+            multiPathfinder.Find();
+            Console.ReadLine();
+        }
+    }
+
+    public class Pathfinder
+    {
+        private readonly ILogger _logger;
+
+        public Pathfinder(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public void Find()
+        {
+            _logger.WriteLog();
+        }
+    }
+
+    public interface ILogger
+    {
+        void WriteLog();
+    }
+
+    public interface ILoggerPolicy
+    {
+        bool CanLog();
+    }
+
+    public class ConsoleLogger : ILogger
+    {
+        private readonly string _message;
+
+        public ConsoleLogger(string message)
+        {
+            _message = message;
+        }
+
+        public virtual void WriteLog()
+        {
+            Console.WriteLine(_message);
+        }
+    }
+
+    public class FileLogger : ILogger
+    {
+        private readonly string _message;
+
+        public FileLogger(string message)
+        {
+            _message = message;
+        }
+
+        public void WriteLog()
+        {
+            File.WriteAllText("log.txt", _message);
+        }
+    }
+
+    public class NormalLoggerPolicy : ILoggerPolicy
+    {
+        public bool CanLog()
+        {
+            return true;
+        }
+    }
+
+    public class FridayLoggerPolicy : ILoggerPolicy
+    {
+        public bool CanLog()
+        {
+            return DateTime.Now.DayOfWeek == DayOfWeek.Friday;
+        }
+    }
+
+    public class ConditionalLogger : ILogger
+    {
+        private readonly ILogger _logger;
+        private readonly ILoggerPolicy _loggerPolicy;
+
+        public ConditionalLogger(ILogger logger, ILoggerPolicy loggerPolicy)
+        {
+            _logger = logger;
+            _loggerPolicy = loggerPolicy;
+        }
+
+        public void WriteLog()
+        {
+            if (_loggerPolicy.CanLog())
+            {
+                _logger.WriteLog();
+            }
+        }
+    }
+
+    public class MultiLogger : ILogger
+    {
+        private readonly ILogger[] _loggers;
+
+        public MultiLogger(ILogger[] loggers)
+        {
+            _loggers = loggers;
+        }
+
+        public void WriteLog()
+        {
+            foreach (ILogger logger in _loggers)
+                logger.WriteLog();
+        }
+    }
+}
