@@ -1,0 +1,215 @@
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        try
+        {
+            string paymentSystem1BaseLink = "pay.system1.ru/order?amount=12000RUB&hash=";
+            string paymentSystem2BaseLink = "order.system2.ru/pay?hash=";
+            string paymentSystem3BaseLink = "system3.com/pay?amount=12000&curency=RUB&hash=";
+
+            string secretKey = "key";
+
+            PaymentSystem paymentSystemFirst = new PaymentSystem(paymentSystem1BaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType())));
+            PaymentSystem paymentSystemSecond = new PaymentSystem(paymentSystem2BaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType()), new AmountHashingPolicy(new NoneHashingType())));
+            PaymentSystem paymentSystemThird = new PaymentSystem(paymentSystem3BaseLink, secretKey, new LinkCompiler(new RequiredKeyPolicy(), new AmountHashingPolicy(new SHA1HashingType()), new IDHashingPolicy(new NoneHashingType())));
+
+            Order order = new Order(14, 88);
+
+            Console.WriteLine(paymentSystemFirst.GetPayingLink(order));
+            Console.WriteLine(paymentSystemSecond.GetPayingLink(order));
+            Console.WriteLine(paymentSystemThird.GetPayingLink(order));
+
+            Console.ReadLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+
+            Console.ReadLine();
+        }
+    }
+}
+
+public class Order
+{
+    public readonly int Id;
+    public readonly int Amount;
+
+    public Order(int id, int amount)
+    {
+        if (id <= 0)
+            throw new ArgumentException("ID заказа должно быть больше 0");
+
+        if (amount <= 0)
+            throw new ArgumentException("Сумма заказа должна быть больше 0");
+
+        Id = id;
+        Amount = amount;
+    }
+}
+
+public interface IKeyLinkPolicy
+{
+    bool IsRequired();
+}
+
+public class RequiredKeyPolicy : IKeyLinkPolicy
+{
+    public bool IsRequired()
+    {
+        return true;
+    }
+}
+
+public class NoneRequiredKeyPolicy : IKeyLinkPolicy
+{
+    public bool IsRequired()
+    {
+        return false;
+    }
+}
+
+public interface IHashingType
+{
+    string Hash(string message);
+}
+
+public class NoneHashingType : IHashingType
+{
+    public string Hash(string message)
+    {
+        if (message == null)
+            throw new ArgumentNullException(nameof(message));
+
+        return message;
+    }
+}
+
+public class MD5HashingType : IHashingType
+{
+    public string Hash(string message)
+    {
+        if (message == null)
+            throw new ArgumentNullException(nameof(message));
+
+        string MD5HashingMark = "MD5Hashed";
+
+        return MD5HashingMark + message;
+    }
+}
+
+public class SHA1HashingType : IHashingType
+{
+    public string Hash(string message)
+    {
+        if (message == null)
+            throw new ArgumentNullException(nameof(message));
+
+        string SHA1HashingMark = "SHA1Hashed";
+
+        return SHA1HashingMark + message;
+    }
+}
+
+public interface IHashingPolicy
+{
+    string Hash(Order order);
+}
+
+public class IDHashingPolicy : IHashingPolicy
+{
+    private readonly IHashingType _hashingType;
+
+    public IDHashingPolicy(IHashingType hashingType)
+    {
+        _hashingType = hashingType ?? throw new ArgumentNullException(nameof(hashingType));
+    }
+
+    public string Hash(Order order)
+    {
+        if (order == null)
+            throw new ArgumentNullException(nameof(order));
+
+        return _hashingType.Hash(order.Id.ToString());
+    }
+}
+
+public class AmountHashingPolicy : IHashingPolicy
+{
+    private readonly IHashingType _hashingType;
+
+    public AmountHashingPolicy(IHashingType hashingType)
+    {
+        _hashingType = hashingType ?? throw new ArgumentNullException(nameof(hashingType));
+    }
+
+    public string Hash(Order order)
+    {
+        if (order == null)
+            throw new ArgumentNullException(nameof(order));
+
+        return _hashingType.Hash(order.Amount.ToString());
+    }
+}
+
+public interface IPaymentSystem
+{
+    string GetPayingLink(Order order);
+}
+
+public class LinkCompiler
+{
+    private readonly IEnumerable<IHashingPolicy> _hashingPolicies = new List<IHashingPolicy>();
+    private readonly IKeyLinkPolicy _keyLinkPolicy;
+
+    public LinkCompiler(IKeyLinkPolicy keyLinkPolicy, params IHashingPolicy[] hashingPolicies)
+    {
+        _keyLinkPolicy = keyLinkPolicy ?? throw new ArgumentNullException(nameof(keyLinkPolicy));
+        _hashingPolicies = hashingPolicies ?? throw new ArgumentNullException(nameof(hashingPolicies));
+    }
+
+    public string GetAdditionalLink(Order order, string key)
+    {
+        if (order == null)
+            throw new ArgumentNullException(nameof(order));
+
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        string additionalLink = null;
+
+        foreach (var policy in _hashingPolicies)
+            additionalLink += "+" + policy.Hash(order);
+
+        if (_keyLinkPolicy.IsRequired())
+            additionalLink += "+" + key;
+
+        return additionalLink;
+    }
+}
+
+public class PaymentSystem : IPaymentSystem
+{
+    private readonly string _basePayingLink;
+    private readonly string _key;
+    private readonly LinkCompiler _linkCompiler;
+
+    public PaymentSystem(string basePayingLink, string key, LinkCompiler linkCompiler)
+    {
+        _basePayingLink = basePayingLink ?? throw new ArgumentNullException(nameof(basePayingLink));
+        _key = key ?? throw new ArgumentNullException(nameof(key));
+        _linkCompiler = linkCompiler ?? throw new ArgumentNullException(nameof(linkCompiler));
+    }
+
+    public string GetPayingLink(Order order)
+    {
+        if (order == null)
+            throw new ArgumentNullException(nameof(order));
+
+        return _basePayingLink + _linkCompiler.GetAdditionalLink(order, _key);
+    }
+}
