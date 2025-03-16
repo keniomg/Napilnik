@@ -7,15 +7,15 @@ class Program
     {
         try
         {
-            string paymentSystem1BaseLink = "pay.system1.ru/order?amount=12000RUB&hash=";
-            string paymentSystem2BaseLink = "order.system2.ru/pay?hash=";
-            string paymentSystem3BaseLink = "system3.com/pay?amount=12000&curency=RUB&hash=";
+            string paymentFirstSystemBaseLink = "pay.system1.ru/order?amount=12000RUB&hash=";
+            string paymentSecondSystemBaseLink = "order.system2.ru/pay?hash=";
+            string paymentThirdSystemBaseLink = "system3.com/pay?amount=12000&curency=RUB&hash=";
 
             string secretKey = "key";
 
-            PaymentSystem paymentSystemFirst = new PaymentSystem(paymentSystem1BaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType())));
-            PaymentSystem paymentSystemSecond = new PaymentSystem(paymentSystem2BaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType()), new AmountHashingPolicy(new NoneHashingType())));
-            PaymentSystem paymentSystemThird = new PaymentSystem(paymentSystem3BaseLink, secretKey, new LinkCompiler(new RequiredKeyPolicy(), new AmountHashingPolicy(new SHA1HashingType()), new IDHashingPolicy(new NoneHashingType())));
+            PaymentSystem paymentSystemFirst = new PaymentSystem(paymentFirstSystemBaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType())));
+            PaymentSystem paymentSystemSecond = new PaymentSystem(paymentSecondSystemBaseLink, secretKey, new LinkCompiler(new NoneRequiredKeyPolicy(), new IDHashingPolicy(new MD5HashingType()), new AmountHashingPolicy(new NoneHashingType())));
+            PaymentSystem paymentSystemThird = new PaymentSystem(paymentThirdSystemBaseLink, secretKey, new LinkCompiler(new RequiredKeyPolicy(), new AmountHashingPolicy(new SHA1HashingType()), new IDHashingPolicy(new NoneHashingType())));
 
             Order order = new Order(14, 88);
 
