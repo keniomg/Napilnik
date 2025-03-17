@@ -64,11 +64,19 @@ public class FirstPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string md5HashMark = "MD5Hashed";
-        string additionalLink = md5HashMark + order.Id.ToString();
+        string orderLinkPart = order.Id.ToString();
+        string additionalLink = Hash(orderLinkPart);
         string fullLink = _baseLink + additionalLink;
 
         return fullLink;
+    }
+
+    private string Hash(string message)
+    {
+        string md5HashMark = "MD5Hashed";
+        string hashedLink = md5HashMark + message;
+
+        return hashedLink;
     }
 }
 
@@ -83,11 +91,19 @@ public class SecondPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string md5HashMark = "MD5Hashed";
-        string additionalLink = md5HashMark + order.Id.ToString() + order.Amount.ToString();
+        string orderLinkPart = order.Id.ToString() + order.Amount.ToString();
+        string additionalLink = Hash(orderLinkPart);
         string fullLink = _baseLink + additionalLink;
 
         return fullLink;
+    }
+
+    private string Hash(string message)
+    {
+        string md5HashMark = "MD5Hashed";
+        string hashedLink = md5HashMark + message;
+
+        return hashedLink;
     }
 }
 
@@ -104,10 +120,18 @@ public class ThirdPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string sha1HashMark = "SHA1Hashed";
-        string additionalLink = sha1HashMark + order.Amount.ToString() + order.Id.ToString() + _secretKey;
+        string orderLinkPart = order.Amount.ToString() + order.Id.ToString() + _secretKey;
+        string additionalLink = Hash(orderLinkPart);
         string fullLink = _baseLink + additionalLink;
 
         return fullLink;
+    }
+
+    private string Hash(string message)
+    {
+        string sha1HashMark = "SHA1Hashed";
+        string hashedLink = sha1HashMark + message;
+
+        return hashedLink;
     }
 }
