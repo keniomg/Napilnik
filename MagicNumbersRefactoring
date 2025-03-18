@@ -1,0 +1,14 @@
+class Program
+{
+    class Weapon
+    {
+        private const int MinimumBulletsValue = 0;
+        private const int BulletShootCost = 1;
+
+        private int _bullets;
+
+        public bool CanShoot() => _bullets > MinimumBulletsValue;
+
+        public void Shoot() => _bullets -= BulletShootCost;
+    }
+}
