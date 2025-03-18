@@ -1,0 +1,15 @@
+using System.Collections.Generic;
+
+class Program
+{
+    class PlayerData { }
+
+    class GunController { }
+
+    class Follower { }
+
+    class UnitGetter
+    {
+        public IReadOnlyCollection<Unit> Units { get; private set; }
+    }
+}
