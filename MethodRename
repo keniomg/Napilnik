@@ -1,0 +1,15 @@
+class Program
+{
+    public class ExampleClass
+    {
+        public static int Clamp(int value, int minimumValue, int maximumValue)
+        {
+            if (value < minimumValue)
+                return minimumValue;
+            else if (value > maximumValue)
+                return maximumValue;
+            else
+                return value;
+        }
+    }
+}
