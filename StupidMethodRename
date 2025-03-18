@@ -1,6 +1,6 @@
 class Program
 {
-    public class ExampleClass
+    public class Example
     {
         public static int Clamp(int value, int minimumValue, int maximumValue)
         {
