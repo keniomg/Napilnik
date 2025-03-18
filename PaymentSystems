@@ -1,0 +1,149 @@
+using System;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        try
+        {
+            string firstSystemBaseLink = "pay.system1.ru/order?amount=12000RUB&hash=";
+            string secondSystemBaseLink = "order.system2.ru/pay?hash=";
+            string thirdSystemBaseLink = "system3.com/pay?amount=12000&curency=RUB&hash=";
+            string secretKey = "12345";
+
+            Order order = new Order(14, 12000);
+
+            MD5Hasher md5Hasher = new MD5Hasher();
+            SHA1Hasher sha1Hasher = new SHA1Hasher();
+
+            FirstPaymentSystem firstPaymentSystem = new FirstPaymentSystem(firstSystemBaseLink, md5Hasher);
+            SecondPaymentSystem secondPaymentSystem = new SecondPaymentSystem(secondSystemBaseLink, md5Hasher);
+            ThirdPaymentSystem thirdPaymentSystem = new ThirdPaymentSystem(thirdSystemBaseLink, secretKey, sha1Hasher);
+
+            Console.WriteLine(firstPaymentSystem.GetPayingLink(order));
+            Console.WriteLine(secondPaymentSystem.GetPayingLink(order));
+            Console.WriteLine(thirdPaymentSystem.GetPayingLink(order));
+
+            Console.ReadLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}
+
+public class Order
+{
+    public readonly int Id;
+    public readonly int Amount;
+
+    public Order(int id, int amount)
+    {
+        if (id <= 0)
+            throw new ArgumentException("ID заказа должно быть больше 0");
+
+        if (amount <= 0)
+            throw new ArgumentException("Сумма заказа должна быть больше 0");
+
+        Id = id;
+        Amount = amount;
+    }
+}
+
+public interface IPaymentSystem
+{
+    string GetPayingLink(Order order);
+}
+
+public class FirstPaymentSystem : IPaymentSystem
+{
+    private readonly string _baseLink;
+    private readonly IHasher _hasher;
+
+    public FirstPaymentSystem(string baseLink, IHasher hasher)
+    {
+        _baseLink = baseLink;
+        _hasher = hasher;
+    }
+
+    public string GetPayingLink(Order order)
+    {
+        string orderLinkPart = order.Id.ToString();
+        string additionalLink = _hasher.Hash(orderLinkPart);
+        string fullLink = _baseLink + additionalLink;
+
+        return fullLink;
+    }
+}
+
+public class SecondPaymentSystem : IPaymentSystem
+{
+    private readonly string _baseLink;
+    private readonly IHasher _hasher;
+
+    public SecondPaymentSystem(string baseLink, IHasher hasher)
+    {
+        _baseLink = baseLink;
+        _hasher = hasher;
+    }
+
+    public string GetPayingLink(Order order)
+    {
+        string orderLinkPart = order.Id.ToString() + order.Amount.ToString();
+        string additionalLink = _hasher.Hash(orderLinkPart);
+        string fullLink = _baseLink + additionalLink;
+
+        return fullLink;
+    }
+}
+
+public class ThirdPaymentSystem : IPaymentSystem
+{
+    private readonly string _baseLink;
+    private readonly string _secretKey;
+    private readonly IHasher _hasher;
+
+    public ThirdPaymentSystem(string baseLink, string secretKey, IHasher hasher)
+    {
+        _baseLink = baseLink;
+        _secretKey = secretKey;
+        _hasher = hasher;
+    }
+
+    public string GetPayingLink(Order order)
+    {
+        string orderLinkPart = order.Amount.ToString() + order.Id.ToString() + _secretKey;
+        string additionalLink = _hasher.Hash(orderLinkPart);
+        string fullLink = _baseLink + additionalLink;
+
+        return fullLink;
+    }
+}
+
+public interface IHasher
+{
+    string Hash(string message);
+}
+
+public class MD5Hasher : IHasher
+{
+    public string Hash(string message)
+    {
+        string md5HashMark = "MD5Hashed";
+        string hashedLink = md5HashMark + message;
+
+        return hashedLink;
+    }
+}
+
+public class SHA1Hasher : IHasher
+{
+    public string Hash(string message)
+    {
+        string sha1HashMark = "SHA1Hashed";
+        string hashedLink = sha1HashMark + message;
+
+        return hashedLink;
+    }
+}
