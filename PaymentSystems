@@ -1,4 +1,6 @@
 using System;
+using System.Security.Cryptography;
+using System.Text;
 
 class Program
 {
@@ -6,25 +8,25 @@ class Program
     {
         try
         {
-            string firstSystemBaseLink = "pay.system1.ru/order?amount=12000RUB&hash=";
-            string secondSystemBaseLink = "order.system2.ru/pay?hash=";
-            string thirdSystemBaseLink = "system3.com/pay?amount=12000&curency=RUB&hash=";
+            string firstSystemBaseLink = "pay.system1.ru/order?amount={0}RUB&hash={1}";
+            string secondSystemBaseLink = "order.system2.ru/pay?amount={0}&id={1}&hash={2}";
+            string thirdSystemBaseLink = "system3.com/pay?amount={0}&currency=RUB&id={1}&hash={2}";
             string secretKey = "12345";
 
             Order order = new Order(14, 12000);
 
-            MD5Hasher md5Hasher = new MD5Hasher();
-            SHA1Hasher sha1Hasher = new SHA1Hasher();
+            IHasher md5Hasher = new MD5Hasher();
+            IHasher sha1Hasher = new SHA1Hasher();
 
-            FirstPaymentSystem firstPaymentSystem = new FirstPaymentSystem(firstSystemBaseLink, md5Hasher);
-            SecondPaymentSystem secondPaymentSystem = new SecondPaymentSystem(secondSystemBaseLink, md5Hasher);
-            ThirdPaymentSystem thirdPaymentSystem = new ThirdPaymentSystem(thirdSystemBaseLink, secretKey, sha1Hasher);
+            IPaymentSystem[] paymentSystems =
+            {
+                new FirstPaymentSystem(firstSystemBaseLink, md5Hasher),
+                new SecondPaymentSystem(secondSystemBaseLink, md5Hasher),
+                new ThirdPaymentSystem(thirdSystemBaseLink, secretKey, sha1Hasher)
+            };
 
-            Console.WriteLine(firstPaymentSystem.GetPayingLink(order));
-            Console.WriteLine(secondPaymentSystem.GetPayingLink(order));
-            Console.WriteLine(thirdPaymentSystem.GetPayingLink(order));
-
-            Console.ReadLine();
+            foreach (IPaymentSystem system in paymentSystems)
+                Console.WriteLine(system.GetPayingLink(order));
         }
         catch (Exception ex)
         {
@@ -35,14 +37,13 @@ class Program
 
 public class Order
 {
-    public readonly int Id;
-    public readonly int Amount;
+    public int Id { get; }
+    public int Amount { get; }
 
     public Order(int id, int amount)
     {
         if (id <= 0)
             throw new ArgumentException("ID заказа должно быть больше 0");
-
         if (amount <= 0)
             throw new ArgumentException("Сумма заказа должна быть больше 0");
 
@@ -69,11 +70,7 @@ public class FirstPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string orderLinkPart = order.Id.ToString();
-        string additionalLink = _hasher.Hash(orderLinkPart);
-        string fullLink = _baseLink + additionalLink;
-
-        return fullLink;
+        return string.Format(_baseLink, order.Amount, _hasher.Hash(order.Id.ToString()));
     }
 }
 
@@ -90,11 +87,7 @@ public class SecondPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string orderLinkPart = order.Id.ToString() + order.Amount.ToString();
-        string additionalLink = _hasher.Hash(orderLinkPart);
-        string fullLink = _baseLink + additionalLink;
-
-        return fullLink;
+        return string.Format(_baseLink, order.Amount, order.Id, _hasher.Hash(order.Id + order.Amount.ToString()));
     }
 }
 
@@ -113,11 +106,7 @@ public class ThirdPaymentSystem : IPaymentSystem
 
     public string GetPayingLink(Order order)
     {
-        string orderLinkPart = order.Amount.ToString() + order.Id.ToString() + _secretKey;
-        string additionalLink = _hasher.Hash(orderLinkPart);
-        string fullLink = _baseLink + additionalLink;
-
-        return fullLink;
+        return string.Format(_baseLink, order.Amount, order.Id, _hasher.Hash(order.Amount + order.Id + _secretKey));
     }
 }
 
@@ -130,10 +119,13 @@ public class MD5Hasher : IHasher
 {
     public string Hash(string message)
     {
-        string md5HashMark = "MD5Hashed";
-        string hashedLink = md5HashMark + message;
+        using (MD5 md5 = MD5.Create())
+        {
+            byte[] inputBytes = Encoding.UTF8.GetBytes(message);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
 
-        return hashedLink;
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
     }
 }
 
@@ -141,9 +133,12 @@ public class SHA1Hasher : IHasher
 {
     public string Hash(string message)
     {
-        string sha1HashMark = "SHA1Hashed";
-        string hashedLink = sha1HashMark + message;
+        using (SHA1 sha1 = SHA1.Create())
+        {
+            byte[] inputBytes = Encoding.UTF8.GetBytes(message);
+            byte[] hashBytes = sha1.ComputeHash(inputBytes);
 
-        return hashedLink;
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        }
     }
 }
