@@ -1,14 +1,32 @@
-class Program
+using System;
+
+public class Program
 {
-    class Weapon
+    public class Weapon
     {
-        private const int MinimumBulletsValue = 0;
         private const int BulletShootCost = 1;
 
         private int _bullets;
 
-        public bool CanShoot() => _bullets > MinimumBulletsValue;
+        public Weapon(int bullets)
+        {
+            if (bullets < 0)
+                throw new ArgumentException("Количество патрон не может быть отрицательным");
 
-        public void Shoot() => _bullets -= BulletShootCost;
+            _bullets = bullets;
+        }
+
+        public bool CanShoot()
+        {
+            return _bullets >= BulletShootCost;
+        }
+
+        public void Shoot()
+        {
+            if (CanShoot() == false)
+                throw new InvalidOperationException("Нет патронов.");
+
+            _bullets -= BulletShootCost;
+        }
     }
 }
