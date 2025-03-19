@@ -1,5 +1,5 @@
 public class Example
 {
     public void Shoot(Player target) { }
-    public string FindByIndex(int number) { }
+    public string FindElement(int index) { }
 }
