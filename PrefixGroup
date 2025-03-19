@@ -2,15 +2,37 @@ using System;
 
 public class Player
 {
-    public string Name { get; private set; }
-    public int Age { get; private set; }
+    public Player(string name, int age)
+    {
+        if (age <= 0)
+            throw new ArgumentOutOfRangeException("Возвраст должен быть больше 0");
+
+        if (name.Length == 0)
+            throw new ArgumentOutOfRangeException("Имя должно состоять хотя бы из одного символа");
+
+        Name = name ?? throw new ArgumentNullException("Имя не может быть равно 'null'");
+        Age = age;
+    }
+
+    public string Name { get; }
+    public int Age { get; }
 }
 
 public class Mover
 {
-    public float DirectionX { get; private set; }
-    public float DirectionY { get; private set; }
-    public float Speed { get; private set; }
+    public Mover(float horizontalDirection, float verticalDirection, float speed)
+    {
+        if (speed < 0)
+            throw new ArgumentException("Скорость не может быть отрицательной");
+
+        HorizontalDirection = horizontalDirection;
+        VerticalDirection = verticalDirection;
+        Speed = speed;
+    }
+
+    public float HorizontalDirection { get; }
+    public float VerticalDirection { get; }
+    public float Speed { get; }
 
     public void Move()
     {
@@ -20,8 +42,20 @@ public class Mover
 
 public class Weapon
 {
-    public float Cooldown { get; private set; }
-    public int Damage { get; private set; }
+    public Weapon(float cooldown, int damage)
+    {
+        if (cooldown < 0)
+            throw new ArgumentException("Время перезарядки не может быть отрицательным");
+
+        if (damage <= 0)
+            throw new ArgumentException("Урон должен быть больше 0");
+
+        Cooldown = cooldown;
+        Damage = damage;
+    }
+
+    public float Cooldown { get; }
+    public int Damage { get; }
 
     public void Attack()
     {
