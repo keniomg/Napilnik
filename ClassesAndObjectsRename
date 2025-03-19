@@ -4,7 +4,7 @@ class Program
 {
     class PlayerData { }
 
-    class GunController { }
+    class Gun { }
 
     class Follower { }
 
