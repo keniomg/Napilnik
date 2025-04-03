@@ -1,0 +1,87 @@
+using System;
+using System.Collections.Generic;
+
+namespace IMJunior
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            List<IPaymentHandler> paymentHandlers = new List<IPaymentHandler>
+                {
+                    new QIWI(),
+                    new WebMoney(),
+                    new Card()
+                };
+
+            try
+            {
+                OrderForm orderForm = new OrderForm(paymentHandlers);
+                IPaymentHandler paymentHandler = orderForm.GetPaymentHandler();
+                paymentHandler.ShowPaymentResult();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Ошибка: " + exception.Message);
+            }
+        }
+    }
+
+    public class OrderForm
+    {
+        private readonly IEnumerable<IPaymentHandler> _paymentHandlers;
+
+        public OrderForm(IEnumerable<IPaymentHandler> paymentHandlers)
+        {
+            _paymentHandlers = paymentHandlers ?? throw new ArgumentNullException("Список систем не задан");
+        }
+
+        public IPaymentHandler GetPaymentHandler()
+        {
+            Console.WriteLine("Мы принимаем: QIWI, WebMoney, Card");
+            Console.WriteLine("Какое системой вы хотите совершить оплату?");
+            string systemId = Console.ReadLine();
+
+            foreach (IPaymentHandler paymentHandler in _paymentHandlers)
+                if (paymentHandler.GetType().Name.Equals(systemId, StringComparison.OrdinalIgnoreCase))
+                    return paymentHandler;
+
+            throw new InvalidOperationException("Система с введённым идентификатором не найдена...");
+        }
+    }
+
+    public interface IPaymentHandler
+    {
+        void ShowPaymentResult();
+    }
+
+    public class QIWI : IPaymentHandler
+    {
+        public void ShowPaymentResult()
+        {
+            Console.WriteLine("Вы оплатили с помощью QIWI");
+            Console.WriteLine("Проверка платежа через QIWI...");
+            Console.WriteLine("Оплата прошла успешно!");
+        }
+    }
+
+    public class WebMoney : IPaymentHandler
+    {
+        public void ShowPaymentResult()
+        {
+            Console.WriteLine("Вы оплатили с помощью WebMoney...");
+            Console.WriteLine("Проверка платежа через WebMoney...");
+            Console.WriteLine("Оплата прошла успешно!");
+        }
+    }
+
+    public class Card : IPaymentHandler
+    {
+        public void ShowPaymentResult()
+        {
+            Console.WriteLine("Вы оплатили с помощью Card...");
+            Console.WriteLine("Проверка платежа через Card...");
+            Console.WriteLine("Оплата прошла успешно!");
+        }
+    }
+}
