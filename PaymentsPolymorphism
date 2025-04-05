@@ -7,18 +7,22 @@ namespace IMJunior
     {
         static void Main(string[] args)
         {
-            List<IPaymentHandler> paymentHandlers = new List<IPaymentHandler>
+            OrderForm orderForm = new OrderForm();
+
+            List<IPaymentSystemCreator> creators = new List<IPaymentSystemCreator>
                 {
-                    new QIWI(),
-                    new WebMoney(),
-                    new Card()
+                    new QIWICreator(),
+                    new WebMoneyCreator(),
+                    new CardCreator()
                 };
 
             try
             {
-                OrderForm orderForm = new OrderForm(paymentHandlers);
-                IPaymentHandler paymentHandler = orderForm.GetPaymentHandler();
-                paymentHandler.ShowPaymentResult();
+                PaymentsSystemInfoForm paymentsSystemInfoForm = new PaymentsSystemInfoForm(creators);
+                PaymentSystemSearcher paymentSystemSearcher = new PaymentSystemSearcher(creators);
+                paymentsSystemInfoForm.GetInfo();
+                PaymentHandler paymentHandler = new PaymentHandler(paymentSystemSearcher.GetPaymentSystemCreator(orderForm.GetInput()));
+                paymentHandler.Handle();
             }
             catch (Exception exception)
             {
@@ -27,35 +31,103 @@ namespace IMJunior
         }
     }
 
+    public interface IPaymentSystem
+    {
+        void ShowPaymentResult();
+    }
+
+    public interface IPaymentSystemCreator
+    {
+        IPaymentSystem GetPaymentSystem();
+    }
+
     public class OrderForm
     {
-        private readonly IEnumerable<IPaymentHandler> _paymentHandlers;
-
-        public OrderForm(IEnumerable<IPaymentHandler> paymentHandlers)
+        public string GetInput()
         {
-            _paymentHandlers = paymentHandlers ?? throw new ArgumentNullException("Список систем не задан");
+            Console.WriteLine("Какой системой вы хотите совершить оплату?");
+
+            return Console.ReadLine();
+        }
+    }
+
+    public class QIWICreator : IPaymentSystemCreator
+    {
+        public IPaymentSystem GetPaymentSystem()
+        {
+            return new QIWI();
+        }
+    }
+
+    public class WebMoneyCreator : IPaymentSystemCreator
+    {
+        public IPaymentSystem GetPaymentSystem()
+        {
+            return new WebMoney();
+        }
+    }
+
+    public class CardCreator : IPaymentSystemCreator
+    {
+        public IPaymentSystem GetPaymentSystem()
+        {
+            return new Card();
+        }
+    }
+
+    public class PaymentsSystemInfoForm
+    {
+        private readonly IEnumerable<IPaymentSystemCreator> _paymentSystemCreators;
+
+        public PaymentsSystemInfoForm(IEnumerable<IPaymentSystemCreator> paymentSystemCreators)
+        {
+            _paymentSystemCreators = paymentSystemCreators ?? throw new InvalidOperationException("Список генераторов платёжных систем не задан");
         }
 
-        public IPaymentHandler GetPaymentHandler()
+        public void GetInfo()
         {
-            Console.WriteLine("Мы принимаем: QIWI, WebMoney, Card");
-            Console.WriteLine("Какое системой вы хотите совершить оплату?");
-            string systemId = Console.ReadLine();
+            Console.WriteLine("Мы принимаем:\n");
 
-            foreach (IPaymentHandler paymentHandler in _paymentHandlers)
-                if (paymentHandler.GetType().Name.Equals(systemId, StringComparison.OrdinalIgnoreCase))
-                    return paymentHandler;
+            foreach (IPaymentSystemCreator creator in _paymentSystemCreators)
+                Console.WriteLine(creator.GetPaymentSystem().GetType().Name + "\n");
+        }
+    }
+
+    public class PaymentSystemSearcher
+    {
+        private readonly IEnumerable<IPaymentSystemCreator> _creators;
+
+        public PaymentSystemSearcher(IEnumerable<IPaymentSystemCreator> paymentSystemCreators)
+        {
+            _creators = paymentSystemCreators ?? throw new InvalidOperationException("Список генераторов систем пуст");
+        }
+
+        public IPaymentSystemCreator GetPaymentSystemCreator(string systemId)
+        {
+            foreach (IPaymentSystemCreator creator in _creators)
+                if (creator.GetPaymentSystem().GetType().Name.Equals(systemId, StringComparison.OrdinalIgnoreCase))
+                    return creator;
 
             throw new InvalidOperationException("Система с введённым идентификатором не найдена...");
         }
     }
 
-    public interface IPaymentHandler
+    public class PaymentHandler
     {
-        void ShowPaymentResult();
+        private readonly IPaymentSystemCreator _creator;
+
+        public PaymentHandler(IPaymentSystemCreator creator)
+        {
+            _creator = creator ?? throw new ArgumentNullException(nameof(creator));
+        }
+
+        public void Handle()
+        {
+            _creator.GetPaymentSystem().ShowPaymentResult();
+        }
     }
 
-    public class QIWI : IPaymentHandler
+    public class QIWI : IPaymentSystem
     {
         public void ShowPaymentResult()
         {
@@ -65,7 +137,7 @@ namespace IMJunior
         }
     }
 
-    public class WebMoney : IPaymentHandler
+    public class WebMoney : IPaymentSystem
     {
         public void ShowPaymentResult()
         {
@@ -75,7 +147,7 @@ namespace IMJunior
         }
     }
 
-    public class Card : IPaymentHandler
+    public class Card : IPaymentSystem
     {
         public void ShowPaymentResult()
         {
