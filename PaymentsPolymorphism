@@ -20,7 +20,7 @@ namespace IMJunior
             {
                 PaymentsSystemInfoForm paymentsSystemInfoForm = new PaymentsSystemInfoForm(creators);
                 PaymentSystemSearcher paymentSystemSearcher = new PaymentSystemSearcher(creators);
-                paymentsSystemInfoForm.GetInfo();
+                paymentsSystemInfoForm.ShowInfo();
                 PaymentHandler paymentHandler = new PaymentHandler(paymentSystemSearcher.GetPaymentSystemCreator(orderForm.GetInput()));
                 paymentHandler.Handle();
             }
@@ -38,6 +38,8 @@ namespace IMJunior
 
     public interface IPaymentSystemCreator
     {
+        string SystemId { get; }
+
         IPaymentSystem GetPaymentSystem();
     }
 
@@ -53,6 +55,8 @@ namespace IMJunior
 
     public class QIWICreator : IPaymentSystemCreator
     {
+        public string SystemId { get; private set; } = "QIWI";
+
         public IPaymentSystem GetPaymentSystem()
         {
             return new QIWI();
@@ -61,6 +65,8 @@ namespace IMJunior
 
     public class WebMoneyCreator : IPaymentSystemCreator
     {
+        public string SystemId { get; private set; } = "WebMoney";
+
         public IPaymentSystem GetPaymentSystem()
         {
             return new WebMoney();
@@ -69,6 +75,8 @@ namespace IMJunior
 
     public class CardCreator : IPaymentSystemCreator
     {
+        public string SystemId { get; private set; } = "Банковская карта";
+
         public IPaymentSystem GetPaymentSystem()
         {
             return new Card();
@@ -84,12 +92,12 @@ namespace IMJunior
             _paymentSystemCreators = paymentSystemCreators ?? throw new InvalidOperationException("Список генераторов платёжных систем не задан");
         }
 
-        public void GetInfo()
+        public void ShowInfo()
         {
             Console.WriteLine("Мы принимаем:\n");
 
             foreach (IPaymentSystemCreator creator in _paymentSystemCreators)
-                Console.WriteLine(creator.GetPaymentSystem().GetType().Name + "\n");
+                Console.WriteLine(creator.SystemId + "\n");
         }
     }
 
@@ -105,7 +113,7 @@ namespace IMJunior
         public IPaymentSystemCreator GetPaymentSystemCreator(string systemId)
         {
             foreach (IPaymentSystemCreator creator in _creators)
-                if (creator.GetPaymentSystem().GetType().Name.Equals(systemId, StringComparison.OrdinalIgnoreCase))
+                if (creator.SystemId.Equals(systemId, StringComparison.OrdinalIgnoreCase))
                     return creator;
 
             throw new InvalidOperationException("Система с введённым идентификатором не найдена...");
@@ -151,8 +159,8 @@ namespace IMJunior
     {
         public void ShowPaymentResult()
         {
-            Console.WriteLine("Вы оплатили с помощью Card...");
-            Console.WriteLine("Проверка платежа через Card...");
+            Console.WriteLine("Вы оплатили с помощью банковской карты...");
+            Console.WriteLine("Проверка платежа через банковскую карту...");
             Console.WriteLine("Оплата прошла успешно!");
         }
     }
